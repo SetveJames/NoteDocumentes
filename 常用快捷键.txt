@@ -1,0 +1,45 @@
+--Eclipse/MyEclipse快捷键
+
+	ctrl+shift+f 格式化代码
+	ctrl+shift+t 全局查找类
+	ctrl+shift+r 查找资源
+	ctrl+shift+o 导包
+	ctrl+O 显示OutLine大纲
+	ctrl+1 修复
+	ctrl+D 删除
+
+	alt+/ 补全提示
+	ctrl+/ 注释
+	ctrl+t 显示类继承体系
+	ctrl+f11 Run As
+
+	ctrl+2+l 抽取局部变量
+	ctrl+D 删除一行
+	alt+shift+m 抽取为方法
+	ctrl+k 同名单词之间跳转
+	ctrl+shift+k 查找下一个同名单词
+
+	alt+shift+L 抽取为本地变量
+
+----------------------------------------------------------------------------------
+
+--Android Studio/Intelli IEDA
+
+	ctrl+shift+/,ctrl+l 注释
+	ctrl+alt+shift+L 格式化代码
+	ctrl+alt+f 提取为全局变量
+	ctrl+alt+v 提取为局部变量
+	F4 打开类、方法、变量的定义
+	alt+enter 弹出解决错误提示
+	ctrl+o 浏览当前类的成员变量和成员函数
+	ctrl+p 显示方法参数列表
+	ctrl+n 全局查找类
+	ctrl+h 查看当前类的继承关系
+	ctrl+b 查看变量、方法被引用的地方
+
+	ctrl+shift+n 全局查找文件
+	ctrl+shift+f 全局查找选中的代码
+	ctrl+shift+alt+n 查找类中的方法或变量
+	ctrl+alt+m 大小写转化
+	ctrl+alt+b 查看类/接口的子实现类
+	ctrl+F12 列出类/接口中的成员（变量+属性+方法）
