@@ -1,0 +1,118 @@
+Aware接口：让普通的bean类实现这个接口，实现可以让bean对象能够访问使用框架系统(IOC容器)本身的一些属性的功能；
+FactoryBean：当IOC容器初始化完成时，FactoryBean的getObject()并没有被调用，所以getObject()中的对象并没有被创建(但实现了FactoryBean接口的类本身的对象已经创建好在IOC容器中了)
+	只有当context.getBean(实现了FactoryBean接口的类名)执行时，FactoryBean的getObject()才会被执行进而创建getObject()中的对象
+	想要获取实现了FactoryBean接口的类本身的对象时需要在context.getBean("&实现了FactoryBean接口的类名")加上&取地址符；
+SpringFramwork只有一个单一的容器，SpringMVC有父子容器(查找bean时优先在子容器中找，找不到的话再到父容器中找)；
+
+
+
+
+
+ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("aaa.xml");
+1.
+	↑ new AbstractXmlApplicationContext() //创建AbstractXmlApplicationContext对象，并初始化成员属性
+	↑ new AbstractRefreshableConfigApplicationContext(); //创建AbstractRefreshableConfigApplicationContext对象，并初始化成员属性
+	↑ new AbstractRefreshableApplicationContext(); //创建AbstractRefreshableApplicationContext对象
+	↑ new AbstractApplicationContext(); //创建AbstractApplicationContext对象
+		1.初始化成员属性
+			-创建日志对象：Log logger = LogFactory.getLog(getClass())
+			-生成容器id：id = ObjectUtils.identityToString(this)
+			-创建beanFactoryPostProcessor集合：List<BeanFactoryPostProcessor> beanFactoryPostProcessors = new ArrayList<>()
+			-创建容器"refresh" 和 "destroy"两个阶段的同步监视器对象：Object startupShutdownMonitor = new Object()
+			-创建监听器集合：Set<ApplicationListener<?>> applicationListeners = new LinkedHashSet<>()
+		2.创建资源模板解析器：this.resourcePatternResolver = getResourcePatternResolver(); 
+			new PathMatchingResourcePatternResolver()
+				PathMatcher pathMatcher = new AntPathMatcher() //路径匹配器
+		3.设置父容器，默认为null
+	↑ new DefaultResourceLoader(); //创建DefaultResourceLoader对象
+		创建ClassLoader对象classLoader;(Thread.currentThread().getContextClassLoader()获取)
+
+2.setConfigLocations(configLocations)
+	1.创建Environment环境对象(具体为StandardEnvironment实例)
+	  AbstractApplicationContext#environment = new StandardEnvironment();
+		new AbstractEnvironment(); //创建AbstractEnvironment对象
+		--创建 this.propertySources=new MutablePropertySources()
+		--创建 this.propertyResolver = new PropertySourcesPropertyResolver(this.propertySources)
+		--回调子类AbstractApplicationContext#customizePropertySources(this.propertySources)方法；
+			--添加系统属性信息PropertySource(调用System.getProperties())
+			--添加系统环境信息PropertySource(调用System.getenv())
+	2. 处理路径中的占位符：${...}或者嵌套的${...${...}...}
+	   --AbstractEnvironment#resolveRequiredPlaceholders(String text)
+		AbstractPropertyResolver#resolveRequiredPlaceholders(String text)
+		AbstractPropertyResolver#doResolvePlaceholders(String text, PropertyPlaceholderHelper helper)
+			PropertyPlaceholderHelper#replacePlaceholders(String value, PlaceholderResolver placeholderResolver)
+			PropertyPlaceholderHelper#parseStringValue(String value, PlaceholderResolver placeholderResolver, @Nullable Set<String> visitedPlaceholders)
+
+	3. 把处理后的xml配置文件的路径保存在 String[]数组configLocations中
+
+AbstractApplicationContext#refresh()方法执行
+3. 创建beanFactory工厂前的准备工作   AbstractApplicationContext#prepareRefresh()方法
+	1. 设置启动时间
+	2. 设置关闭标记为false
+	3. 设置激活标记为true
+	4. 初始化占位属性(留给子类实现)
+	5. 验证必填属性
+	6. 初始化监听器和事件集合对象
+
+4. 创建beanFactory工厂
+   --ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory()
+   --AbstractApplicationContext#obtainFreshBeanFactory()
+	AbstractRefreshableApplicationContext#refreshBeanFactory()
+	 1.检查是否存在之前的bean工厂，如果有的话就清除
+	 2.创建一个新的beanFactory对象
+		DefaultListableBeanFactory beanFactory = createBeanFactory();
+		new DefaultListableBeanFactory(null)
+			new AbstractAutowireCapableBeanFactory(null)
+				new AbstractBeanFactory()
+					new FactoryBeanRegistrySupport()
+						new DefaultSingletonBeanRegistry()
+							new SimpleAliasRegistry()
+				this.parentBeanFactory=null
+
+	 3.加载xml配置文件封装成BeanDefinition放到bean工厂中
+		loadBeanDefinitions(beanFactory);
+			AbstractXmlApplicationContext#loadBeanDefinitions()
+				XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory)
+					new AbstractBeanDefinitionReader()
+				initBeanDefinitionReader(beanDefinitionReader); //初始化
+				loadBeanDefinitions(beanDefinitionReader); //加载解析xml配置文件
+					AbstractBeanDefinitionReader#loadBeanDefinitions(String... locations)
+					AbstractBeanDefinitionReader#loadBeanDefinitions(String locations)
+					AbstractBeanDefinitionReader#loadBeanDefinitions(String location, @Nullable Set<Resource> actualResources)
+						AbstractApplicationContext#getResources(String locationPattern)
+							PathMatchingResourcePatternResolver#getResources(String locationPattern)
+								DefaultResourceLoader#getResource(String location) //把路径转为Resource对象
+								--把xml路径封装为ClassPathResource对象并返回ClassPathResource对象
+								  (ClassPathResource对象中封装了真实的xml文件名和类加载器)
+							--把ClassPathResource对象放入Resource[]数组中，返回Resource[]数组
+						AbstractBeanDefinitionReader#loadBeanDefinitions(Resource... resources)
+				XmlBeanDefinitionReader#loadBeanDefinitions(Resource resource)
+					把resource对象封装为EncodedResource对象(带编码信息的对象)
+				XmlBeanDefinitionReader#loadBeanDefinitions(EncodedResource encodedResource)
+				--ClassPathResource#getInputStream() //使用类加载器读取加载xml文件为输入流InputStream
+				--把InputStream封装为InputSource
+				XmlBeanDefinitionReader#doLoadBeanDefinitions(InputSource inputSource, Resource resource)
+				XmlBeanDefinitionReader#registerBeanDefinitions(Document doc, Resource resource)
+				XmlBeanDefinitionReader#createReaderContext(Resource resource)
+					new XmlReaderContext() //创建XmlReaderContext对象
+					DefaultBeanDefinitionDocumentReader#registerBeanDefinitions(Document doc, XmlReaderContext readerContext)
+					DefaultBeanDefinitionDocumentReader#doRegisterBeanDefinitions(Element root) //解析xml文件
+					DefaultBeanDefinitionDocumentReader#parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) //解析xml文件
+					DefaultBeanDefinitionDocumentReader#parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate)
+					DefaultBeanDefinitionDocumentReader#processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate)
+						BeanDefinitionParserDelegate#parseBeanDefinitionElement(Element ele)
+
+						BeanDefinitionParserDelegate#decorateBeanDefinitionIfRequired(Element ele, BeanDefinitionHolder originalDef)
+						BeanDefinitionParserDelegate#decorateBeanDefinitionIfRequired(Element ele, BeanDefinitionHolder originalDef, @Nullable BeanDefinition containingBd)
+
+
+
+
+	 4.把新创建的beanFactory赋值给成员变量
+		this.beanFactory = beanFactory;
+
+
+
+
+
+
